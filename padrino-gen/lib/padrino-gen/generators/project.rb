@@ -21,10 +21,14 @@ module Padrino
 
       argument :name, :desc => "The name of your padrino project"
 
+
       class_option :template,     :desc => "Run padrino template", :aliases => '-p', :default => nil,   :type => :string
+      class_option :app ,         :desc => "The application name", :aliases => '-n', :default => nil,   :type => :string
       class_option :run_bundle,   :desc => "Run bundle install",   :aliases => '-b', :default => false, :type => :boolean
       class_option :root,         :desc => "The root destination", :aliases => '-r', :default => ".",   :type => :string
       class_option :dev,          :desc => "Use padrino from a git checkout",        :default => false, :type => :boolean
+      class_option :tiny,         :desc => "Generate tiny app skeleton", :aliases => '-i', :default => false, :type => :boolean
+      class_option :adapter,      :desc => "generate sql adapter", :aliases => '-a', :default => nil,   :type => :string
 
       # Definitions for the available customizable components
       component_option :orm,        "database engine",    :aliases => '-d', :choices => [:activerecord, :datamapper, :mongomapper, :mongoid, :sequel, :couchrest], :default => :none
@@ -39,13 +43,13 @@ module Padrino
 
       # Copies over the Padrino base application App
       def setup_project
+        @app_name = (options[:app] || name).gsub(/\W/, "_").underscore.classify
         self.destination_root = File.join(options[:root], name)
-        @class_name = name.gsub(/\W/, "_").underscore.classify
         if options[:template] # Run the template to create project
           execute_runner(:template, options[:template])
         else # generate project without template
           directory("project/", destination_root)
-          directory("app/", destination_root("app/"))
+          app_skeleton('app', options[:tiny])
           store_component_config('.components')
           template "templates/Gemfile.tt", destination_root("Gemfile")
         end

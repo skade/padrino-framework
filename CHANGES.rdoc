@@ -2,6 +2,11 @@
 
 == 0.9.11 (Unreleased)
 
+* Updated usher version which fix a problem using :provides with dashes in the URL
+* Improve the router's use of base uri's in url(). [Thanks to Lholden]
+* Support params as arrays for generation. More efficent generation
+* Added 405 support
+* Fixed / Updated German translations [Thanks to Gottlike]
 * Fixed a problem with extensions since Sinatra#register extend every thing
 * Fixed a problem when reloading apps
 * Fixed MongoId adapter using git legacy branch instead (un)stable gem
@@ -21,6 +26,9 @@
 * Added Ukrainian translation [Thanks to Mama]
 * Added Spanish translation [Thanks to Alvaro]
 * Fixes issue with invalid field names
+* Adds tiny skeleton generation for project and app generators
+* Adds support for a '--app' option to specify app name in project generator
+* Adds support for '--adapter' option which specifies what SQL adapter to use(for AR, Datamapper, Sequel)
 
 == 0.9.10
 
@@ -105,7 +113,7 @@
 * Fixes issue with formatted routes for an index
 * Fixed an issue with Riot and RR in generator
 * Cleaned up the implementation for asset include helpers for javascript and css
-* Added stylesheet generator. Decouples from sass from haml generation. Includes sass and less ( via rack-less)
+* Added stylesheet generator. Includes sass and less ( via rack-less)
 
 == 0.9.6
 
