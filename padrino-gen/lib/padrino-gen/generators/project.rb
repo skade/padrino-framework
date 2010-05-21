@@ -21,7 +21,6 @@ module Padrino
 
       argument :name, :desc => "The name of your padrino project"
 
-
       class_option :template,     :desc => "Run padrino template", :aliases => '-p', :default => nil,   :type => :string
       class_option :app ,         :desc => "The application name", :aliases => '-n', :default => nil,   :type => :string
       class_option :run_bundle,   :desc => "Run bundle install",   :aliases => '-b', :default => false, :type => :boolean
