@@ -128,6 +128,15 @@ class TestRouting < Test::Unit::TestCase
     assert_equal 404, status
   end
 
+  should "not match routes if url_format and http_accept is provided but not included" do
+    mock_app do
+      get(:a, :provides => [:js, :html]){ content_type }
+    end
+
+    get "/a.xml", {}, {"HTTP_ACCEPT" => "text/html"}
+    assert_equal 404, status
+  end
+
   should "generate routes for format simple" do
     mock_app do
       get(:foo, :provides => [:html, :rss]) { render :haml, "Test" }
