@@ -14,9 +14,9 @@ DM = (<<-DM) unless defined?(DM)
 DataMapper.logger = logger
 
 case Padrino.env
-  when :development then DataMapper.setup(:default, !DB_DEVELOPMENT!))
-  when :production  then DataMapper.setup(:default, !DB_PRODUCTION!))
-  when :test        then DataMapper.setup(:default, !DB_TEST!))
+  when :development then DataMapper.setup(:default, !DB_DEVELOPMENT!)
+  when :production  then DataMapper.setup(:default, !DB_PRODUCTION!)
+  when :test        then DataMapper.setup(:default, !DB_TEST!)
 end
 DM
 
@@ -35,9 +35,9 @@ def setup_orm
     dm.gsub!(/!DB_TEST!/,"\"postgres://localhost/#{name}_test\"")
     'do_postgres'
   else
-    dm.gsub!(/!DB_DEVELOPMENT!/,"\"sqlite3://\" + Padrino.root('db', \"#{name}_development.db\"")
-    dm.gsub!(/!DB_PRODUCTION!/,"\"sqlite3://\" + Padrino.root('db', \"#{name}_production.db\"")
-    dm.gsub!(/!DB_TEST!/,"\"sqlite3://\" + Padrino.root('db', \"#{name}_test.db\"")
+    dm.gsub!(/!DB_DEVELOPMENT!/,"\"sqlite3://\" + Padrino.root('db', \"#{name}_development.db\")")
+    dm.gsub!(/!DB_PRODUCTION!/,"\"sqlite3://\" + Padrino.root('db', \"#{name}_production.db\")")
+    dm.gsub!(/!DB_TEST!/,"\"sqlite3://\" + Padrino.root('db', \"#{name}_test.db\")")
     'do_sqlite3'
   end
   
