@@ -1,19 +1,12 @@
-require 'rubygems'
-require 'rack/test'
+require File.expand_path('../../../load_paths', __FILE__)
 require 'test/unit'
+require 'rack/test'
+require 'rack'
 require 'shoulda'
 require 'mocha'
 require 'webrat'
 require 'thor/group'
 require 'fakeweb'
-
-# We try to load the vendored padrino-core if exist
-%w(core).each do |lib|
-  if File.exist?(File.dirname(__FILE__) + "/../../padrino-#{lib}/lib")
-    $:.unshift File.dirname(__FILE__) + "/../../padrino-#{lib}/lib"
-  end
-end
-
 require 'padrino-gen'
 require 'padrino-core/support_lite'
 
@@ -33,7 +26,7 @@ class Test::Unit::TestCase
     Time.stubs(:now).returns(time)
     return time
   end
-  
+
   # generate(:controller, 'DemoItems', '-r=/tmp/sample_project')
   def generate(name, *params)
     "Padrino::Generators::#{name.to_s.camelize}".constantize.start(params)
