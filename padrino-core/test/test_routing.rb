@@ -67,10 +67,11 @@ class TestRouting < Test::Unit::TestCase
       get("/main"){ "hello" }
       post("/main"){ "hello" }
     end
-    assert_equal 3, app.routes.size, "should generate GET, HEAD and PUT"
-    assert_equal ["GET"],  app.routes[0].as_options[:conditions][:request_method]
-    assert_equal ["HEAD"], app.routes[1].as_options[:conditions][:request_method]
-    assert_equal ["POST"], app.routes[2].as_options[:conditions][:request_method]
+    routes = app.router.routes
+    assert_equal 3, routes.size, "should generate GET, HEAD and PUT"
+    assert_equal ["GET"],  routes[0].as_options[:conditions][:request_method]
+    assert_equal ["HEAD"], routes[1].as_options[:conditions][:request_method]
+    assert_equal ["POST"], routes[2].as_options[:conditions][:request_method]
   end
 
   should 'generate basic urls'do
@@ -392,6 +393,7 @@ class TestRouting < Test::Unit::TestCase
 
   should 'use uri_root' do
     mock_app do
+      set :uri_root, '/'
       get(:foo){ "foo" }
     end
     @app.uri_root = '/'
@@ -406,6 +408,8 @@ class TestRouting < Test::Unit::TestCase
 
   should 'use uri_root with controllers' do
     mock_app do
+      set :uri_root, '/testing'
+      
       controller :foo do
         get(:bar){ "bar" }
       end
@@ -557,7 +561,7 @@ class TestRouting < Test::Unit::TestCase
       provides :xml
 
       get("/foo"){ "Foo in #{content_type}" }
-      get("/bar"){ "Bar in #{content_type}" }
+      get("/bar"){ raise if content_type != nil }
     end
 
     get '/foo', {}, { 'HTTP_ACCEPT' => 'application/xml' }
@@ -566,7 +570,7 @@ class TestRouting < Test::Unit::TestCase
     assert not_found?
 
     get '/bar', {}, { 'HTTP_ACCEPT' => 'application/xml' }
-    assert_equal 'Bar in html', body
+    assert_equal 200, status
   end
 
   should "set content_type to :html for both empty Accept as well as Accept text/html" do
