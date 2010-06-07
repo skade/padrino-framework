@@ -5,6 +5,7 @@ require 'shoulda'
 require 'mocha'
 require 'webrat'
 require 'thor/group'
+require 'fakeweb'
 
 # We try to load the vendored padrino-core if exist
 %w(core).each do |lib|

@@ -8,7 +8,7 @@ class TestPluginGenerator < Test::Unit::TestCase
   context 'the project generator with template' do
     setup do
       example_template_path = File.join(File.dirname(__FILE__), 'fixtures', 'example_template.rb')
-      Padrino.bin_gen(:project, 'sample_project', "-p=#{example_template_path}", '-r=/tmp', '> /dev/null')
+      silence_logger { generate(:project, 'sample_project', "-p=#{example_template_path}", '-r=/tmp', '> /dev/null') }
     end
 
     should "generate correctly a project given a template" do
@@ -105,7 +105,7 @@ class TestPluginGenerator < Test::Unit::TestCase
   context "with git commands" do
     setup do
       git_template_path = File.join(File.dirname(__FILE__), 'fixtures', 'git_template.rb')
-      Padrino.bin_gen('project', 'sample_git', "-p=#{git_template_path}", '-r=/tmp', '> /dev/null')
+      silence_logger { generate(:project, 'sample_git', "-p=#{git_template_path}", '-r=/tmp', '> /dev/null') }
     end
 
     should "generate correctly a repository" do
@@ -122,7 +122,7 @@ class TestPluginGenerator < Test::Unit::TestCase
   context "with rake invocations" do
     setup do
       rake_template_path = File.join(File.dirname(__FILE__), 'fixtures', 'rake_template.rb')
-      Padrino.bin_gen('project', 'sample_rake', "-p=#{rake_template_path}", '-r=/tmp', '> /dev/null')
+      silence_logger { generate(:project, 'sample_rake', "-p=#{rake_template_path}", '-r=/tmp', '> /dev/null') }
     end
 
     should "Run rake task and list tasks" do
@@ -133,7 +133,7 @@ class TestPluginGenerator < Test::Unit::TestCase
   context "with admin commands" do
     setup do
       admin_template_path = File.join(File.dirname(__FILE__), 'fixtures', 'admin_template.rb')
-      Padrino.bin_gen('project', 'sample_admin', "-p=#{admin_template_path}", '-r=/tmp', '> /dev/null')
+      silence_logger { generate(:project, 'sample_admin', "-p=#{admin_template_path}", '-r=/tmp', '> /dev/null') }
     end
 
     should "generate correctly an admin" do

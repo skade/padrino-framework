@@ -27,6 +27,7 @@ module Padrino
       class_option :dev,          :desc => "Use padrino from a git checkout",                                           :default => false,    :type => :boolean
       class_option :tiny,         :desc => "Generate tiny app skeleton",                              :aliases => '-i', :default => false,    :type => :boolean
       class_option :adapter,      :desc => "SQL adapter for ORM (sqlite, mysql, postgres)",           :aliases => '-a', :default => "sqlite", :type => :string
+      class_option :template,     :desc => "Generate project from template",                          :aliases => '-p', :default => nil,      :type => :string
 
       # Definitions for the available customizable components
       component_option :orm,        "database engine",    :aliases => '-d', :choices => [:activerecord, :datamapper, :mongomapper, :mongoid, :sequel, :couchrest], :default => :none
