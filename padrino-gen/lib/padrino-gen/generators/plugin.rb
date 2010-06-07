@@ -3,7 +3,7 @@ require 'padrino-core/cli/base' unless defined?(Padrino::Cli::Base)
 module Padrino
   module Generators
     class Plugin < Thor::Group
-
+      PLUGIN_URL = 'http://github.com/padrino/padrino-recipes/tree/master/plugins'
       # Add this generator to our padrino-gen
       Padrino::Generators.add_generator(:plugin, self)
 
@@ -29,8 +29,7 @@ module Padrino
       # Create the Padrino Plugin
       def setup_plugin
         if options[:list] # list method ran here
-          plugin_list_url = 'http://github.com/padrino/padrino-recipes/tree/master/plugins'
-          plugins = open(plugin_list_url).read.scan(%r{/plugins/(\w+)_plugin.rb}).uniq
+          plugins = open(PLUGIN_URL).read.scan(%r{/plugins/(\w+)_plugin.rb}).uniq
           say "Available plugins:", :green
           say plugins.map { |plugin| "  - #{plugin}" }.join("\n")
         else # executing the plugin instructions
