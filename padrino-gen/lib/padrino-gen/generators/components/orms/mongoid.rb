@@ -29,7 +29,7 @@ MONGO
 def setup_orm
   require_dependencies 'bson_ext', :require => 'mongo'
   require_dependencies 'mongoid'
-  create_file("config/database.rb", MONGOID.gsub(/!NAME!/, name.underscore))
+  create_file("config/database.rb", MONGOID.gsub(/!NAME!/, name.underscore.gsub('.','_')))
   empty_directory('app/models')
 end
 

@@ -2,6 +2,8 @@
 
 == 0.9.11 (Unreleased)
 
+* Added compatibility with AS 3.0
+* Fixed compatibility with DM 1.0
 * Added bundler support also for testing [Thanks to Ryanfitz]
 * Updated I18n dependency to version > 0.4.0
 * Padrino now uses http_router instead of usher to handle url routing
@@ -38,11 +40,14 @@
 * Added Ukrainian translation [Thanks to Mama]
 * Added Spanish translation [Thanks to Alvaro]
 * Added Turkish translation [Thanks to Selman ULUG]
+* Added Czech translation [Thanks to Josef Pospíši]
 * Added support for disabling asset timestamps via setting
 * Fixed issue with invalid field names
 * Adds tiny skeleton generation for project and app generators
 * Adds support for a '--app' option to specify app name in project generator
 * Adds support for '--adapter' option which specifies what SQL adapter to use(for AR, Datamapper, Sequel)
+* Fixed escaping of javascript [Thanks to Ryan Fitzgerald]
+* Adds dojo.js as script component
 
 == 0.9.10
 

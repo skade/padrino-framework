@@ -8,7 +8,7 @@ require 'webrat'
 require 'thor/group'
 require 'fakeweb'
 require 'padrino-gen'
-require 'padrino-core/support_lite'
+require 'padrino-core/support_lite' unless defined?(SupportLite)
 
 Padrino::Generators.load_components!
 

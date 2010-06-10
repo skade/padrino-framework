@@ -1,3 +1,4 @@
+require 'rubygems'
 require 'thor/group'
 
 module Padrino
@@ -18,13 +19,12 @@ module Padrino
       def load_boot
         begin
           ENV['PADRINO_LOG_LEVEL'] ||= "test"
-          Dir.chdir(options[:root]) do
-            if File.exist?('config/boot.rb')
-              require 'config/boot.rb'
-            else
-              # If we are outside app we need to load support_lite
-              require 'padrino-core/support_lite'
-            end
+          boot = options[:root] ? File.join(options[:root], 'config/boot.rb') : 'config/boot.rb'
+          if File.exist?(boot)
+            require File.expand_path(boot)
+          else
+            # If we are outside app we need to load support_lite
+            require 'padrino-core/support_lite' unless defined?(SupportLite)
           end
         rescue Exception => e
           puts "=> Problem loading config/boot.rb"
