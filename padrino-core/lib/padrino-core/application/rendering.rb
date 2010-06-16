@@ -85,7 +85,12 @@ module Padrino
 
     module InstanceMethods
       def content_type(type=nil, params={}) #:nodoc:
-        type.nil? ? @_content_type : super(type, params)
+        if type.nil?
+          @_content_type || :html
+        else
+          @_content_type = type
+          super(type, params)
+        end
       end
 
       private
