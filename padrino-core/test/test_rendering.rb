@@ -2,8 +2,22 @@ require File.expand_path(File.dirname(__FILE__) + '/helper')
 require 'i18n'
 
 class TestRendering < Test::Unit::TestCase
+  class RenderingApp < Sinatra::Base
+    register ::Padrino::Rendering
+    set :environment, :test
+    set :views, 'test/views'
+  end
+  
   def teardown
     remove_views
+  end
+  
+  def mock_app(base=RenderingApp, &block)
+    @app = Sinatra.new(base, &block)
+  end
+  
+  def app
+    @app
   end
 
   context 'for application layout functionality' do
@@ -33,7 +47,7 @@ class TestRendering < Test::Unit::TestCase
     should 'use rails way layout' do
       with_layout :application, "this is a <%= yield %>" do
         mock_app do
-          get("/"){ render :erb, "rails way layout" }
+          get("/"){ content_type :html; render :erb, "rails way layout" }
         end
 
         get "/"
@@ -45,7 +59,7 @@ class TestRendering < Test::Unit::TestCase
       with_layout "layouts/custom", "this is a <%= yield %>" do
         mock_app do
           layout :custom
-          get("/"){ render :erb, "rails way custom layout" }
+          get("/"){ content_type :html; render :erb, "rails way custom layout" }
         end
 
         get "/"
@@ -57,11 +71,8 @@ class TestRendering < Test::Unit::TestCase
       with_layout :application, "this is a <%= yield %>" do
         with_view :index, "index" do
           mock_app do
-            get("/with/layout"){ render :index }
-            get("/without/layout"){ render :index, :layout => false }
+            get("/without/layout"){ content_type :html; render :index, :layout => false }
           end
-          get "/with/layout"
-          assert_equal "this is a index", body
           get "/without/layout"
           assert_equal "index", body
         end
@@ -70,14 +81,13 @@ class TestRendering < Test::Unit::TestCase
 
     should 'not use layout with js format' do
       create_layout :application, "this is an <%= yield %>"
-      create_view :foo, "erb file"
       create_view :foo, "js file", :format => :js
+
       mock_app do
-        get('/layout_test', :respond_to => [:html, :js]){ render :foo }
+        get('/layout_test'){ content_type :js; render :foo }
       end
+
       get "/layout_test"
-      assert_equal "this is an erb file", body
-      get "/layout_test.js"
       assert_equal "js file", body
     end
 
@@ -87,76 +97,54 @@ class TestRendering < Test::Unit::TestCase
       create_view :foo, "erb file"
       create_view :foo, "xml file", :format => :xml
       mock_app do
-        get('/layout_test', :respond_to => [:html, :xml]){ render :foo }
+        get('/layout_html'){ content_type :html; render :foo }
+        get('/layout_xml'){ content_type :xml; render :foo }
       end
-      get "/layout_test"
+      get "/layout_html"
       assert_equal "this is an erb file", body
-      get "/layout_test.xml"
+      get "/layout_xml"
       assert_equal "document start xml file end", body
     end
-
+    
     should 'by default use html file when no other is given' do
       create_layout :foo, "html file", :format => :html
 
       mock_app do
-        get('/content_type_test', :respond_to => [:html, :xml]) { render :foo }
+        get('/html') { render :foo }
       end
 
-      get "/content_type_test"
-      assert_equal "html file", body
-      get "/content_type_test.xml"
+      get "/html"
       assert_equal "html file", body
     end
 
-    should 'not use html file when DEFAULT_RENDERING_OPTIONS[:strict_format] == true' do
+    should 'by default fall back to html if content format is not available' do
       create_layout :foo, "html file", :format => :html
-
-      mock_app do
-        get('/default_rendering_test', :respond_to => [:html, :xml]) { render :foo }
+      
+       mock_app do
+        get('/xml') { content_type = :xml; render :foo }
       end
-
-      @save = Padrino::Rendering::DEFAULT_RENDERING_OPTIONS
-      Padrino::Rendering::DEFAULT_RENDERING_OPTIONS[:strict_format] = true
-
-      get "/default_rendering_test"
+      
+      get "/xml"
       assert_equal "html file", body
-      assert_raise Padrino::Rendering::TemplateNotFound do
-        get "/default_rendering_test.xml"
-      end
-
-      Padrino::Rendering::DEFAULT_RENDERING_OPTIONS.merge(@save)
     end
 
-    should 'use correct layout with each controller' do
-      create_layout :foo, "foo layout at <%= yield %>"
-      create_layout :bar, "bar layout at <%= yield %>"
-      create_layout :application, "default layout at <%= yield %>"
-      mock_app do
-        get("/"){ render :erb, "application" }
-        controller :foo do
-          layout :foo
-          get("/"){ render :erb, "foo" }
-        end
-        controller :bar do
-          layout :bar
-          get("/"){ render :erb, "bar" }
-        end
-        controller :none do
-          get("/") { render :erb, "none" }
-          get("/with_foo_layout")  { render :erb, "none with layout", :layout => :foo }
-        end
-      end
-      get "/foo"
-      assert_equal "foo layout at foo", body
-      get "/bar"
-      assert_equal "bar layout at bar", body
-      get "/none"
-      assert_equal "default layout at none", body
-      get "/none/with_foo_layout"
-      assert_equal "foo layout at none with layout", body
-      get "/"
-      assert_equal "default layout at application", body
-    end
+    #should 'not fall back to html file when DEFAULT_RENDERING_OPTIONS[:strict_format] == true' do
+    #  create_layout :foo, "html file", :format => :html
+
+    #  mock_app do
+    #    get('/xml') { @_content_type = :xml; render :foo }
+    #  end
+
+    #  @save = Padrino::Rendering::DEFAULT_RENDERING_OPTIONS
+    #  Padrino::Rendering::DEFAULT_RENDERING_OPTIONS[:strict_format] = true
+
+    #  assert_raise Padrino::Rendering::TemplateNotFound do
+    #    get "/xml"
+    #  end
+
+    #  Padrino::Rendering::DEFAULT_RENDERING_OPTIONS.merge(@save)
+    #end
+
   end
 
   context 'for application render functionality' do
@@ -208,14 +196,10 @@ class TestRendering < Test::Unit::TestCase
       create_view :foo, "Im Js", :format => :js
       create_view :foo, "Im Erb"
       mock_app do
-        get("/foo", :respond_to => :js) { render :foo }
-        get("/bar.js") { render :foo }
+        get("/foo") { content_type :js; render :foo }
       end
-      get "/foo.js"
+      get "/foo"
       assert_equal "Im Js", body
-      # TODO: implement this!
-      # get "/bar.js"
-      # assert_equal "Im Js", body
     end
 
     should 'resolve with explicit template format' do
@@ -223,15 +207,15 @@ class TestRendering < Test::Unit::TestCase
       create_view :foo, "Im Haml", :format => :haml
       create_view :foo, "Im Xml", :format => :xml
       mock_app do
-        get("/foo_normal", :respond_to => :js) { render 'foo' }
-        get("/foo_haml", :respond_to => :js) { render 'foo.haml' }
-        get("/foo_xml", :respond_to => :js) { render 'foo.xml' }
+        get("/foo_normal") { render 'foo.js' }
+        get("/foo_haml") { render 'foo.haml' }
+        get("/foo_xml") { render 'foo.xml' }
       end
-      get "/foo_normal.js"
+      get "/foo_normal"
       assert_equal "Im Js", body
-      get "/foo_haml.js"
+      get "/foo_haml"
       assert_equal "Im Haml\n", body
-      get "/foo_xml.js"
+      get "/foo_xml"
       assert_equal "Im Xml", body
     end
 
@@ -239,11 +223,12 @@ class TestRendering < Test::Unit::TestCase
       create_view :foo, "Im Html"
       create_view :foo, "xml.rss", :format => :rss
       mock_app do
-        get(:index, :map => "/", :provides => [:html, :rss]){ render 'foo' }
+        get('/html'){ content_type :html; render 'foo' }
+        get('/rss') { content_type :rss; render 'foo' }
       end
-      get "/", {}, { 'HTTP_ACCEPT' => 'text/html;q=0.9' }
+      get "/html"
       assert_equal "Im Html", body
-      get ".rss"
+      get "/rss"
       assert_equal "<rss/>\n", body
     end
 
@@ -282,27 +267,27 @@ class TestRendering < Test::Unit::TestCase
       create_view :foo, "Im English Js",  :format => :js, :locale => :en
       create_view :foo, "Im Italian Js",  :format => :js, :locale => :it
       mock_app do
-        get("/foo", :respond_to => [:html, :js]) { render :foo }
+        get("/html") { render :foo }
+        get("/js")   { content_type :js; render :foo }
       end
       I18n.locale = :none
-      get "/foo.js"
+      get "/js"
       assert_equal "Im Js", body
-      get "/foo"
+      get "/html"
       assert_equal "Im Erb", body
       I18n.locale = :en
-      get "/foo"
+      get "/html"
       assert_equal "Im English Erb", body
       I18n.locale = :it
-      get "/foo"
+      get "/html"
       assert_equal "Im Italian Erb", body
       I18n.locale = :en
-      get "/foo.js"
+      get "/js"
       assert_equal "Im English Js", body
       I18n.locale = :it
-      get "/foo.js"
+      get "/js"
       assert_equal "Im Italian Js", body
       I18n.locale = :en
-      assert_raise(RuntimeError) { get "/foo.pk" }
     end
 
     should 'resolve template content_type and locale with layout' do
@@ -321,29 +306,30 @@ class TestRendering < Test::Unit::TestCase
       create_view   :bar, "Im a json",      :format => :json
       mock_app do
         layout :foo
-        get("/bar", :respond_to => [:html, :js, :json]) { render :bar }
+        get("/html") { content_type :html; render :bar }
+        get("/js")   { content_type :js;   render :bar }
+        get("/json") { content_type :json; render :bar }
       end
       I18n.locale = :none
-      get "/bar.js"
+      get "/js"
       assert_equal "Hello Im Js in a Js layout", body
-      get "/bar"
+      get "/html"
       assert_equal "Hello Im Erb in a Erb layout", body
       I18n.locale = :en
-      get "/bar"
+      get "/html"
       assert_equal "Hello Im English Erb in a Erb-En layout", body
       I18n.locale = :it
-      get "/bar"
+      get "/html"
       assert_equal "Hello Im Italian Erb in a Erb-It layout", body
       I18n.locale = :en
-      get "/bar.js"
+      get "/js"
       assert_equal "Hello Im English Js in a Js-En layout", body
       I18n.locale = :it
-      get "/bar.js"
+      get "/js"
       assert_equal "Hello Im Italian Js in a Js-It layout", body
       I18n.locale = :en
-      get "/bar.json"
+      get "/json"
       assert_equal "Im a json", body
-      assert_raise(RuntimeError) { get "/bar.pk" }
     end
 
     should 'renders erb with blocks' do

@@ -46,6 +46,37 @@ class TestApplication < Test::Unit::TestCase
       get '/bar', {}, { 'HTTP_ACCEPT' => 'application/xml' }
       assert_equal "Foo in html", body
     end
+    
+    should 'use correct layout with each controller' do
+      create_layout :foo, "foo layout at <%= yield %>"
+      create_layout :bar, "bar layout at <%= yield %>"
+      create_layout :application, "default layout at <%= yield %>"
+      mock_app do
+        get("/"){ render :erb, "application" }
+        controller :foo do
+          layout :foo
+          get("/"){ render :erb, "foo" }
+        end
+        controller :bar do
+          layout :bar
+          get("/"){ render :erb, "bar" }
+        end
+        controller :none do
+          get("/") { render :erb, "none" }
+          get("/with_foo_layout")  { render :erb, "none with layout", :layout => :foo }
+        end
+      end
+      get "/foo"
+      assert_equal "foo layout at foo", body
+      get "/bar"
+      assert_equal "bar layout at bar", body
+      get "/none"
+      assert_equal "default layout at none", body
+      get "/none/with_foo_layout"
+      assert_equal "foo layout at none with layout", body
+      get "/"
+      assert_equal "default layout at application", body
+    end
 
   end
 end
