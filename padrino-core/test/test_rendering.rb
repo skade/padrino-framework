@@ -119,9 +119,9 @@ class TestRendering < Test::Unit::TestCase
 
     should 'by default fall back to html if content format is not available' do
       create_layout :foo, "html file", :format => :html
-      
-       mock_app do
-        get('/xml') { content_type = :xml; render :foo }
+
+      mock_app do
+        get('/default_rendering_test', :provides => [:html, :xml]) { render :foo }
       end
       
       get "/xml"

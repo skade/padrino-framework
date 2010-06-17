@@ -1,10 +1,8 @@
-require 'padrino-core/support_lite'
-require 'active_support/core_ext/float/rounding'
-require 'active_support/option_merger'
+require 'padrino-core/support_lite' unless defined?(SupportLite)
 require 'cgi'
 require 'i18n'
 
-Dir[File.dirname(__FILE__) + '/padrino-helpers/**/*.rb'].each {|file| require file }
+FileSet.glob_require('padrino-helpers/**/*.rb', __FILE__)
 
 # Load our locales
 I18n.load_path += Dir["#{File.dirname(__FILE__)}/padrino-helpers/locale/*.yml"]

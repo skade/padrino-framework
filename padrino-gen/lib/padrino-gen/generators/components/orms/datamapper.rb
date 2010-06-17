@@ -22,25 +22,25 @@ DM
 
 def setup_orm
   dm = DM
-  require_dependencies 'data_objects', 'datamapper'
+  require_dependencies 'data_mapper'
   require_dependencies case options[:adapter]
-  when 'mysql'
-    dm.gsub!(/!DB_DEVELOPMENT!/,"\"mysql://localhost/#{name}_development\"")
-    dm.gsub!(/!DB_PRODUCTION!/,"\"mysql://localhost/#{name}_production\"")
-    dm.gsub!(/!DB_TEST!/,"\"mysql://localhost/#{name}_test\"")
-    'do_mysql'
-  when 'postgres'
-    dm.gsub!(/!DB_DEVELOPMENT!/,"\"postgres://localhost/#{name}_development\"")
-    dm.gsub!(/!DB_PRODUCTION!/,"\"postgres://localhost/#{name}_production\"")
-    dm.gsub!(/!DB_TEST!/,"\"postgres://localhost/#{name}_test\"")
-    'do_postgres'
-  else
-    dm.gsub!(/!DB_DEVELOPMENT!/,"\"sqlite3://\" + Padrino.root('db', \"#{name}_development.db\")")
-    dm.gsub!(/!DB_PRODUCTION!/,"\"sqlite3://\" + Padrino.root('db', \"#{name}_production.db\")")
-    dm.gsub!(/!DB_TEST!/,"\"sqlite3://\" + Padrino.root('db', \"#{name}_test.db\")")
-    'do_sqlite3'
+    when 'mysql'
+      dm.gsub!(/!DB_DEVELOPMENT!/,"\"mysql://root@localhost/#{name}_development\"")
+      dm.gsub!(/!DB_PRODUCTION!/,"\"mysql://root@localhost/#{name}_production\"")
+      dm.gsub!(/!DB_TEST!/,"\"mysql://root@localhost/#{name}_test\"")
+      'dm-mysql-adapter'
+    when 'postgres'
+      dm.gsub!(/!DB_DEVELOPMENT!/,"\"postgres://root@localhost/#{name}_development\"")
+      dm.gsub!(/!DB_PRODUCTION!/,"\"postgres://root@localhost/#{name}_production\"")
+      dm.gsub!(/!DB_TEST!/,"\"postgres://root@localhost/#{name}_test\"")
+      'dm-postgres-adapter'
+    else
+      dm.gsub!(/!DB_DEVELOPMENT!/,"\"sqlite3://\" + Padrino.root('db', \"#{name}_development.db\")")
+      dm.gsub!(/!DB_PRODUCTION!/,"\"sqlite3://\" + Padrino.root('db', \"#{name}_production.db\")")
+      dm.gsub!(/!DB_TEST!/,"\"sqlite3://\" + Padrino.root('db', \"#{name}_test.db\")")
+      'dm-sqlite-adapter'
   end
-  
+
   create_file("config/database.rb", dm)
   empty_directory('app/models')
 end
@@ -55,10 +55,11 @@ class !NAME!
 end
 MODEL
 
-def create_model_file(name, fields)
-  model_path = destination_root('app/models/', "#{name.to_s.underscore}.rb")
+# options => { :fields => ["title:string", "body:string"], :app => 'app' }
+def create_model_file(name, options={})
+  model_path = destination_root(options[:app], 'models', "#{name.to_s.underscore}.rb")
   model_contents = DM_MODEL.gsub(/!NAME!/, name.to_s.downcase.camelize)
-  field_tuples = fields.collect { |value| value.split(":") }
+  field_tuples = options[:fields].collect { |value| value.split(":") }
   field_tuples.collect! { |field, kind| kind =~ /datetime/i ? [field, 'DateTime'] : [field, kind] } # fix datetime
   column_declarations = field_tuples.collect { |field, kind|"property :#{field}, #{kind.camelize}" }.join("\n  ")
   model_contents.gsub!(/!FIELDS!/, column_declarations)
@@ -79,7 +80,7 @@ MIGRATION
 
 DM_MODEL_UP_MG =  (<<-MIGRATION).gsub(/^/, '    ') unless defined?(DM_MODEL_UP_MG)
 create_table :!TABLE! do
-  column :id, Integer, :serial => true
+  column :id, DataMapper::Property::Integer, :serial => true
   !FIELDS!
 end
 MIGRATION
@@ -90,7 +91,7 @@ MIGRATION
 
 def create_model_migration(migration_name, name, columns)
   output_model_migration(migration_name, name, columns,
-       :column_format => Proc.new { |field, kind| "column :#{field}, \"#{kind.upcase}\"" },
+       :column_format => Proc.new { |field, kind| "column :#{field}, DataMapper::Property::#{kind.classify}" },
        :base => DM_MIGRATION, :up => DM_MODEL_UP_MG, :down => DM_MODEL_DOWN_MG)
 end
 
@@ -103,7 +104,7 @@ MIGRATION
 def create_migration_file(migration_name, name, columns)
   output_migration_file(migration_name, name, columns,
     :base => DM_MIGRATION, :change_format => DM_CHANGE_MG,
-    :add => Proc.new { |field, kind| "add_column :#{field}, #{kind.camelize}"  },
+    :add => Proc.new { |field, kind| "add_column :#{field}, DataMapper::Property::#{kind.classify}" },
     :remove => Proc.new { |field, kind| "drop_column :#{field}" }
   )
 end

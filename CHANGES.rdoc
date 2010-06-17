@@ -2,9 +2,20 @@
 
 == 0.9.11 (Unreleased)
 
+* Fixed provides with IE
+* DM 1.0 and AR Tasks compat
+* Fixed DM 1.0 rake tasks
+* Dropped support of :respond_to in favor of :provides
+* Added provides in controller level App.controller :provides => [:json, :xml]
+* Added compatibility with AS 3.0
+* Fixed compatibility with DM 1.0
+* Improves dependencies in a Gemfile and autoinjected into gemspecs
+* Allow models to be generated in subapps with --app flag
+* Added bundler support also for testing [Thanks to Ryanfitz]
 * Updated I18n dependency to version > 0.4.0
 * Padrino now uses http_router instead of usher to handle url routing
 * Reorganized a bit ours "servers"
+* Added support for easily adding custom dependency paths with Padrino.custom_dependencies("...")
 * Padrino::Application.run! now perform Padrino.load! automatically (useful if you want to use MyApp.run!)
 * PADRINO_ROOT if not defined will be automatically detected
 * Improved reloader (that fixes also problems with MM)
@@ -37,11 +48,15 @@
 * Added Ukrainian translation [Thanks to Mama]
 * Added Spanish translation [Thanks to Alvaro]
 * Added Turkish translation [Thanks to Selman ULUG]
+* Added Czech translation [Thanks to Josef Pospíši]
 * Added support for disabling asset timestamps via setting
 * Fixed issue with invalid field names
 * Adds tiny skeleton generation for project and app generators
 * Adds support for a '--app' option to specify app name in project generator
 * Adds support for '--adapter' option which specifies what SQL adapter to use(for AR, Datamapper, Sequel)
+* Fixed escaping of javascript [Thanks to Ryan Fitzgerald]
+* Adds dojo.js as script component
+* Adds compass component for stylesheets in project generator [Thanks to Ryan Fitzgerald]
 
 == 0.9.10
 
