@@ -323,32 +323,24 @@ module Padrino
         # Allow paths for the given request head or request format
         #
         def provides(*types)
-          mime_types = types.map{ |t| mime_type(t) }
+          mime_types     = types.map{ |t| mime_type(t) }
 
           condition {
-            matching_types = (request.accept.map { |a| a.split(";")[0].strip } & mime_types)
-            request.path_info =~ /\.([^\.\/]+)$/
-            url_format = $1.to_sym if $1
-
-            if !url_format && matching_types.first
-              type = Rack::Mime::MIME_TYPES.find { |k, v| v == matching_types.first }[0].sub(/\./,'').to_sym
-              accept_format = CONTENT_TYPE_ALIASES[type] || type
+            
+            if request.path_info =~ /(\.[^\.\/]+)$/
+              provides_url_format($1, types)
+            else
+              if request.accept.empty?
+                handle_empty_accept(types)
+              else
+                provides_accept_format(types, mime_types)
+              end
             end
 
-            matched_format = types.include?(:any)          ||
-                             types.include?(accept_format) ||
-                             types.include?(url_format)    ||
-                             (request.accept.empty? && types.include?(:html)) # This is only usefull for testing
-
-            if matched_format
-              @_content_type = url_format || accept_format || :html
-              content_type(@_content_type, :charset => 'utf-8')
-            end
-
-            matched_format
           }
         end
         alias :respond_to :provides
+
     end
 
     module InstanceMethods
@@ -389,23 +381,38 @@ module Padrino
           send_file(path, :disposition => nil)
         end
       end
-
+      
       ##
-      # Return the request format, this is useful when we need to respond to a given content_type like:
+      # Return the accept format provided by the client. This is useful when we 
+      # would like to respond using the type the client wants the most.
       #
       # ==== Examples
       #
       #   get :index, :provides => :any do
-      #     case content_type
-      #       when :js    then ...
-      #       when :json  then ...
-      #       when :html  then ...
+      #     case accept_type
+      #     when :js   then ...
+      #     when :json then ...
+      #     when :html then ...
       #     end
       #   end
       #
-      def content_type(type=nil, params={})
-        type.nil? ? @_content_type : super(type, params)
+      def accept_type(type=nil)
+        if type.nil?
+          @_accept_type
+        else
+          @_accept_type = type
+        end
       end
+
+      def content_type(type=nil, params={}) #:nodoc:
+        if type.nil?
+          @_content_type
+        else
+          @_content_type = type
+          super(type, params)
+        end
+      end
+
 
       private
         ##
@@ -451,6 +458,61 @@ module Padrino
 
           route_missing
         end
+          
+        def provides_url_format(format, provided_types)
+
+          if valid_type?(format, provided_types)
+            type_sym = format.sub(/\./,'').to_sym
+            accept_type(type_sym) 
+            true
+          else
+            false
+          end
+        end
+        
+        def handle_empty_accept(types)
+          if types.include? :any
+            type = :html
+          else
+            type = types.first
+          end
+          
+          if type
+            accept_type(type)
+            true
+          else 
+            false
+          end
+        end
+
+        def provides_accept_format(provided_types, mime_types)
+          accepts        = request.accept.map { |a| a.split(";")[0].strip }
+          matching_types = (accepts & mime_types)
+
+          return false if matching_types.empty?
+          
+          type = Rack::Mime::MIME_TYPES.find { |k, v| v == matching_types.first }[0].sub(/\./,'').to_sym
+          accept_format = CONTENT_TYPE_ALIASES[type] || type
+          if accept_format
+            accept_type(accept_format)
+            true
+          elsif accept.include?('*/*')
+            handle_empty_accept(types)
+          else
+            false
+          end
+        end
+
+        def valid_type?(type, provided_types)
+          mime_type = Rack::Mime::MIME_TYPES[type]
+          if mime_type
+            type_sym = type.sub(/\./,'').to_sym
+            provided_types.include?(:any) || provided_types.include?(type_sym)
+          else
+            false
+          end
+        end
+
     end # InstanceMethods
   end # Routing
 end # Padrino

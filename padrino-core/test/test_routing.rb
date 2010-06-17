@@ -144,11 +144,11 @@ class TestRouting < Test::Unit::TestCase
 
   should "not default to HTML if HTML is not provided and no type is given" do
     mock_app do
-      get(:a, :provides => [:js]){ content_type }
+      get(:a, :provides => [:js]){ accept_type.to_s }
     end
 
     get "/a", {}, {}
-    assert_equal 404, status
+    assert_equal 'js', body
   end
 
   should "not match routes if url_format and http_accept is provided but not included" do
@@ -173,8 +173,14 @@ class TestRouting < Test::Unit::TestCase
   should "generate routes for format with controller" do
     mock_app do
       controller :posts do
-        get(:index, :provides => [:html, :rss, :atom, :js]) { render :haml, "Index.#{content_type}" }
-        get(:show,  :with => :id, :provides => [:html, :rss, :atom]) { render :haml, "Show.#{content_type}" }
+        get(:index, :provides => [:html, :rss, :atom, :js]) {
+          content_type accept_type
+          render :haml, "Index.#{content_type}"
+        }
+        get(:show,  :with => :id, :provides => [:html, :rss, :atom]) { 
+          content_type accept_type
+          render :haml, "Show.#{content_type}" 
+        }
       end
     end
     get "/posts"
@@ -248,14 +254,15 @@ class TestRouting < Test::Unit::TestCase
       get(:d, :provides => [:html, :js]){ "html,js"}
     end
     get "/a"
-    assert_equal 404, status
+    assert_equal "js", body 
     get "/a.js"
     assert_equal "js", body
     get "/b"
     assert_equal "any", body
-    assert_raise(RuntimeError) { get "/b.foo" }
-    get "/c"
+    get "/b.foo"
     assert_equal 404, status
+    get "/c"
+    assert_equal 'js,json', body 
     get "/c.js"
     assert_equal "js,json", body
     get "/c.json"
@@ -266,11 +273,11 @@ class TestRouting < Test::Unit::TestCase
     assert_equal "html,js", body
   end
 
-  should 'respond_to and set content_type' do
+  should 'respond_to and set accept_type' do
     Rack::Mime::MIME_TYPES['.foo'] = 'application/foo'
     mock_app do
       get :a, :provides => :any do
-        case content_type
+        case accept_type 
           when :js    then "js"
           when :json  then "json"
           when :foo   then "foo"
@@ -280,16 +287,16 @@ class TestRouting < Test::Unit::TestCase
     end
     get "/a.js"
     assert_equal "js", body
-    assert_equal 'application/javascript;charset=utf-8', response["Content-Type"]
+    #assert_equal 'application/javascript;charset=utf-8', response["Content-Type"]
     get "/a.json"
     assert_equal "json", body
-    assert_equal 'application/json;charset=utf-8', response["Content-Type"]
+    #assert_equal 'application/json;charset=utf-8', response["Content-Type"]
     get "/a.foo"
     assert_equal "foo", body
-    assert_equal 'application/foo;charset=utf-8', response["Content-Type"]
+    #assert_equal 'application/foo;charset=utf-8', response["Content-Type"]
     get "/a"
     assert_equal "html", body
-    assert_equal 'text/html;charset=utf-8', response["Content-Type"]
+    #assert_equal 'text/html;charset=utf-8', response["Content-Type"]
   end
 
   should 'use controllers' do
@@ -527,9 +534,10 @@ class TestRouting < Test::Unit::TestCase
     assert_equal 'Hello World', body
   end
 
-  should "filters by accept header" do
+  should "filter by accept header" do
     mock_app do
       get '/foo', :provides => [:xml, :js] do
+        content_type accept_type, :charset => 'utf-8'
         request.env['HTTP_ACCEPT']
       end
     end
@@ -539,20 +547,12 @@ class TestRouting < Test::Unit::TestCase
     assert_equal 'application/xml', body
     assert_equal 'application/xml;charset=utf-8', response.headers['Content-Type']
 
-    get '/foo.xml'
-    assert ok?
-    assert_equal 'application/xml;charset=utf-8', response.headers['Content-Type']
-
     get '/foo', {}, { 'HTTP_ACCEPT' => 'application/javascript' }
     assert ok?
     assert_equal 'application/javascript', body
     assert_equal 'application/javascript;charset=utf-8', response.headers['Content-Type']
 
-    get '/foo.js'
-    assert ok?
-    assert_equal 'application/javascript;charset=utf-8', response.headers['Content-Type']
-
-    get '/foo', {}, { :accept => 'text/html' }
+    get '/foo', {}, { 'HTTP_ACCEPT' => 'text/html' }
     assert not_found?
   end
 
@@ -560,24 +560,24 @@ class TestRouting < Test::Unit::TestCase
     mock_app do
       provides :xml
 
-      get("/foo"){ "Foo in #{content_type}" }
-      get("/bar"){ raise if content_type != nil }
+      get("/foo"){ "Foo in #{accept_type}" }
+      get("/bar"){ raise if accept_type != nil }
     end
 
     get '/foo', {}, { 'HTTP_ACCEPT' => 'application/xml' }
     assert_equal 'Foo in xml', body
     get '/foo'
-    assert not_found?
-
+    assert_equal 'Foo in xml', body
+    
     get '/bar', {}, { 'HTTP_ACCEPT' => 'application/xml' }
     assert_equal 200, status
   end
 
-  should "set content_type to :html for both empty Accept as well as Accept text/html" do
+  should "set accept_type to :html for both empty Accept as well as Accept text/html" do
     mock_app do
       provides :html
 
-      get("/foo"){ content_type.to_s }
+      get("/foo"){ accept_type.to_s }
     end
 
     get '/foo', {}, {}
