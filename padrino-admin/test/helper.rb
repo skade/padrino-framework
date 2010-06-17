@@ -1,7 +1,7 @@
 ENV['PADRINO_ENV'] = 'test'
 PADRINO_ROOT = File.dirname(__FILE__) unless defined? PADRINO_ROOT
 
-require 'rubygems'
+require File.expand_path('../../../load_paths', __FILE__)
 require 'test/unit'
 require 'rack/test'
 require 'rack'
@@ -15,7 +15,7 @@ require 'thor/group'
   end
 end
 
-require 'padrino-core/support_lite'
+require 'padrino-core/support_lite' unless defined?(SupportLite)
 require 'padrino-admin'
 
 Padrino::Generators.load_components!

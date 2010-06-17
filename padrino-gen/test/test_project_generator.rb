@@ -12,7 +12,6 @@ class TestProjectGenerator < Test::Unit::TestCase
       assert_match_in_file(/class SampleProject < Padrino::Application/,'/tmp/sample_project/app/app.rb')
       assert_match_in_file(/Padrino.mount_core\("SampleProject"\)/,'/tmp/sample_project/config/apps.rb')
       assert_file_exists('/tmp/sample_project/config/boot.rb')
-      assert_file_exists('/tmp/sample_project/spec/spec_helper.rb')
       assert_file_exists('/tmp/sample_project/public/favicon.ico')
     end
     
@@ -22,7 +21,6 @@ class TestProjectGenerator < Test::Unit::TestCase
       assert_match_in_file(/class BaseApp < Padrino::Application/,'/tmp/sample_project/app/app.rb')
       assert_match_in_file(/Padrino.mount_core\("BaseApp"\)/,'/tmp/sample_project/config/apps.rb')
       assert_file_exists('/tmp/sample_project/config/boot.rb')
-      assert_file_exists('/tmp/sample_project/spec/spec_helper.rb')
       assert_file_exists('/tmp/sample_project/public/favicon.ico')
     end
 
@@ -59,7 +57,7 @@ class TestProjectGenerator < Test::Unit::TestCase
       silence_logger { generate(:project, 'sample_project', '--root=/tmp') }
       components_chosen = YAML.load_file('/tmp/sample_project/.components')
       assert_equal 'none', components_chosen[:orm]
-      assert_equal 'rspec', components_chosen[:test]
+      assert_equal 'none', components_chosen[:test]
       assert_equal 'none', components_chosen[:mock]
       assert_equal 'none', components_chosen[:script]
       assert_equal 'haml', components_chosen[:renderer]
@@ -92,7 +90,7 @@ class TestProjectGenerator < Test::Unit::TestCase
       silence_logger { generate(:project, 'sample_project', '--root=/tmp', '--script=none') }
       assert_match_in_file(/gem 'padrino'/, '/tmp/sample_project/Gemfile')
       assert_match_in_file(/gem 'rack-flash'/, '/tmp/sample_project/Gemfile')
-      assert_match_in_file(/gem 'rack-test'/, '/tmp/sample_project/Gemfile')
+      assert_match_in_file(/gem 'thin'/, '/tmp/sample_project/Gemfile')
     end
   end
 
@@ -112,14 +110,14 @@ class TestProjectGenerator < Test::Unit::TestCase
     end
 
     should "properly generate for mocha and rspec" do
-      buffer = silence_logger { generate(:project, 'sample_project', '--root=/tmp', '--mock=mocha', '--script=none') }
+      buffer = silence_logger { generate(:project, 'sample_project', '--root=/tmp','--test=rspec', '--mock=mocha', '--script=none') }
       assert_match /Applying.*?mocha.*?mock/, buffer
       assert_match_in_file(/gem 'mocha'/, '/tmp/sample_project/Gemfile')
       assert_match_in_file(/conf.mock_with :mocha/m, '/tmp/sample_project/spec/spec_helper.rb')
     end
 
     should "properly generate for rr and rspec" do
-      buffer = silence_logger { generate(:project, 'sample_project', '--root=/tmp', '--mock=rr', '--script=none') }
+      buffer = silence_logger { generate(:project, 'sample_project', '--root=/tmp', '--test=rspec', '--mock=rr', '--script=none') }
       assert_match /Applying.*?rr.*?mock/, buffer
       assert_match_in_file(/gem 'rr'/, '/tmp/sample_project/Gemfile')
       assert_match_in_file(/conf.mock_with :rr/m, '/tmp/sample_project/spec/spec_helper.rb')
@@ -199,29 +197,28 @@ class TestProjectGenerator < Test::Unit::TestCase
       should "properly generate default" do
         buffer = silence_logger { generate(:project, 'sample_project', '--root=/tmp', '--orm=datamapper', '--script=none') }
         assert_match /Applying.*?datamapper.*?orm/, buffer
-        assert_match_in_file(/gem 'data_objects'/, '/tmp/sample_project/Gemfile')
-        assert_match_in_file(/gem 'datamapper'/, '/tmp/sample_project/Gemfile')
-        assert_match_in_file(/gem 'do_sqlite3'/, '/tmp/sample_project/Gemfile')
+        assert_match_in_file(/gem 'data_mapper'/, '/tmp/sample_project/Gemfile')
+        assert_match_in_file(/gem 'dm-sqlite-adapter'/, '/tmp/sample_project/Gemfile')
         assert_match_in_file(/DataMapper.setup/, '/tmp/sample_project/config/database.rb')
         assert_dir_exists('/tmp/sample_project/app/models')
       end
       
       should "properly generate for mysql" do
         buffer = silence_logger { generate(:project, 'sample_project', '--root=/tmp', '--orm=datamapper', '--adapter=mysql') }
-        assert_match_in_file(/gem 'do_mysql'/, '/tmp/sample_project/Gemfile')
+        assert_match_in_file(/gem 'dm-mysql-adapter'/, '/tmp/sample_project/Gemfile')
         assert_match_in_file(%r{"mysql://}, '/tmp/sample_project/config/database.rb')
         assert_match_in_file(/sample_project_development/, '/tmp/sample_project/config/database.rb')
       end
       
       should "properly generate for sqlite" do
         buffer = silence_logger { generate(:project, 'sample_project', '--root=/tmp', '--orm=datamapper', '--adapter=sqlite') }
-        assert_match_in_file(/gem 'do_sqlite3'/, '/tmp/sample_project/Gemfile')
+        assert_match_in_file(/gem 'dm-sqlite-adapter'/, '/tmp/sample_project/Gemfile')
         assert_match_in_file(/sample_project_development/, '/tmp/sample_project/config/database.rb')
       end
       
       should "properly generate for postgres" do
         buffer = silence_logger { generate(:project, 'sample_project', '--root=/tmp', '--orm=datamapper', '--adapter=postgres') }
-        assert_match_in_file(/gem 'do_postgres'/, '/tmp/sample_project/Gemfile')
+        assert_match_in_file(/gem 'dm-postgres-adapter'/, '/tmp/sample_project/Gemfile')
         assert_match_in_file(%r{"postgres://}, '/tmp/sample_project/config/database.rb')
         assert_match_in_file(/sample_project_development/, '/tmp/sample_project/config/database.rb')
       end
@@ -303,12 +300,20 @@ class TestProjectGenerator < Test::Unit::TestCase
       assert_file_exists('/tmp/sample_project/public/javascripts/ext-core.js')
       assert_file_exists('/tmp/sample_project/public/javascripts/application.js')
     end
+    
+    should "properly generate for dojo" do
+      buffer = silence_logger { generate(:project, 'sample_project', '--root=/tmp', '--script=dojo') }
+      assert_match /Applying.*?dojo.*?script/, buffer
+      assert_file_exists('/tmp/sample_project/public/javascripts/dojo.js')
+      assert_file_exists('/tmp/sample_project/public/javascripts/application.js')
+    end
   end
 
   context "the generator for test component" do
     should "properly default generate for bacon" do
       buffer = silence_logger { generate(:project, 'sample_project', '--root=/tmp', '--test=bacon', '--script=none') }
       assert_match /Applying.*?bacon.*?test/, buffer
+      assert_match_in_file(/gem 'rack-test'.*?:require => "rack\/test".*?:group => "test"/, '/tmp/sample_project/Gemfile')
       assert_match_in_file(/gem 'bacon'/, '/tmp/sample_project/Gemfile')
       assert_match_in_file(/PADRINO_ENV = 'test' unless defined\?\(PADRINO_ENV\)/, '/tmp/sample_project/test/test_config.rb')
       assert_match_in_file(/Bacon::Context/, '/tmp/sample_project/test/test_config.rb')
@@ -318,6 +323,7 @@ class TestProjectGenerator < Test::Unit::TestCase
     should "properly generate for riot" do
       buffer = silence_logger { generate(:project, 'sample_project', '--root=/tmp', '--test=riot', '--script=none') }
       assert_match /Applying.*?riot.*?test/, buffer
+      assert_match_in_file(/gem 'rack-test'.*?:require => "rack\/test".*?:group => "test"/, '/tmp/sample_project/Gemfile')
       assert_match_in_file(/gem 'riot'/, '/tmp/sample_project/Gemfile')
       assert_match_in_file(/include Rack::Test::Methods/, '/tmp/sample_project/test/test_config.rb')
       assert_match_in_file(/PADRINO_ENV = 'test' unless defined\?\(PADRINO_ENV\)/, '/tmp/sample_project/test/test_config.rb')
@@ -329,6 +335,7 @@ class TestProjectGenerator < Test::Unit::TestCase
     should "properly generate for rspec" do
       buffer = silence_logger { generate(:project, 'sample_project', '--root=/tmp', '--test=rspec', '--script=none') }
       assert_match /Applying.*?rspec.*?test/, buffer
+      assert_match_in_file(/gem 'rack-test'.*?:require => "rack\/test".*?:group => "test"/, '/tmp/sample_project/Gemfile')
       assert_match_in_file(/gem 'rspec'.*?:require => "spec"/, '/tmp/sample_project/Gemfile')
       assert_match_in_file(/PADRINO_ENV = 'test' unless defined\?\(PADRINO_ENV\)/, '/tmp/sample_project/spec/spec_helper.rb')
       assert_match_in_file(/Spec::Runner/, '/tmp/sample_project/spec/spec_helper.rb')
@@ -338,6 +345,7 @@ class TestProjectGenerator < Test::Unit::TestCase
     should "properly generate for shoulda" do
       buffer = silence_logger { generate(:project, 'sample_project', '--root=/tmp', '--test=shoulda', '--script=none') }
       assert_match /Applying.*?shoulda.*?test/, buffer
+      assert_match_in_file(/gem 'rack-test'.*?:require => "rack\/test".*?:group => "test"/, '/tmp/sample_project/Gemfile')
       assert_match_in_file(/gem 'shoulda'/, '/tmp/sample_project/Gemfile')
       assert_match_in_file(/PADRINO_ENV = 'test' unless defined\?\(PADRINO_ENV\)/, '/tmp/sample_project/test/test_config.rb')
       assert_match_in_file(/Test::Unit::TestCase/, '/tmp/sample_project/test/test_config.rb')
@@ -347,6 +355,7 @@ class TestProjectGenerator < Test::Unit::TestCase
     should "properly generate for testspec" do
       buffer = silence_logger { generate(:project, 'sample_project', '--root=/tmp', '--test=testspec', '--script=none') }
       assert_match /Applying.*?testspec.*?test/, buffer
+      assert_match_in_file(/gem 'rack-test'.*?:require => "rack\/test".*?:group => "test"/, '/tmp/sample_project/Gemfile')
       assert_match_in_file(/gem 'test-spec'.*?:require => "test\/spec"/, '/tmp/sample_project/Gemfile')
       assert_match_in_file(/PADRINO_ENV = 'test' unless defined\?\(PADRINO_ENV\)/, '/tmp/sample_project/test/test_config.rb')
       assert_match_in_file(/Test::Unit::TestCase/, '/tmp/sample_project/test/test_config.rb')
@@ -356,6 +365,7 @@ class TestProjectGenerator < Test::Unit::TestCase
     should "properly generate for cucumber" do
       buffer = silence_logger { generate(:project, 'sample_project', '--root=/tmp', '--test=cucumber', '--script=none') }
       assert_match /Applying.*?cucumber.*?test/, buffer
+      assert_match_in_file(/gem 'rack-test'.*?:require => "rack\/test".*?:group => "test"/, '/tmp/sample_project/Gemfile')
       assert_match_in_file(/gem 'rspec'.*?:require => "spec"/, '/tmp/sample_project/Gemfile')
       assert_match_in_file(/gem 'cucumber'/, '/tmp/sample_project/Gemfile')
       assert_match_in_file(/gem 'capybara'/, '/tmp/sample_project/Gemfile')
@@ -387,6 +397,17 @@ class TestProjectGenerator < Test::Unit::TestCase
       assert_match_in_file(/module LessInitializer.*Rack::Less/m, '/tmp/sample_project/lib/less_plugin.rb')
       assert_match_in_file(/register LessInitializer/m, '/tmp/sample_project/app/app.rb')
       assert_dir_exists('/tmp/sample_project/app/stylesheets')
+    end
+    
+    should "properly generate for compass" do
+      buffer = silence_logger { generate(:project, 'sample_project', '--root=/tmp', '--renderer=haml','--script=none','--stylesheet=compass') }
+      assert_match_in_file(/gem 'compass'/, '/tmp/sample_project/Gemfile')
+      assert_match_in_file(/Compass.configure_sass_plugin\!/, '/tmp/sample_project/lib/compass_plugin.rb')
+      assert_match_in_file(/module CompassInitializer.*Sass::Plugin::Rack/m, '/tmp/sample_project/lib/compass_plugin.rb')
+      assert_match_in_file(/register CompassInitializer/m, '/tmp/sample_project/app/app.rb')
+
+      assert_file_exists('/tmp/sample_project/app/stylesheets/application.scss')
+      assert_file_exists('/tmp/sample_project/app/stylesheets/partials/_base.scss')
     end
   end
 end

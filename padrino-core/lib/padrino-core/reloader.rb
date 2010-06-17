@@ -2,14 +2,13 @@ require 'pathname'
 
 module Padrino
   ##
-  # High performant source reloader
+  # High performance source code reloader middleware
   #
   module Reloader
     ##
-    # This class acts as Rack middleware.
-    #
-    # It is performing a check/reload cycle at the start of every request, but
-    # also respects a cool down time, during which nothing will be done.
+    # This class acts as a Rack middleware to be added to the application stack. This middleware performs a
+    # check and reload for source files at the start of each request, but also respects a specified cool down time
+    # during which no further action will be taken.
     #
     class Rack
       def initialize(app, cooldown = 1)
@@ -34,36 +33,35 @@ module Padrino
     end
 
     ##
-    # You can exclude some folders from reload its contents.
-    # Defaults excluded directories of Padrino.root are: test, spec, features, tmp, config, lib, db and public
+    # Specified folders can be excluded from the code reload detection process.
+    # Default excluded directories at Padrino.root are: test, spec, features, tmp, config, lib, db and public
     #
     def self.exclude
       @_exclude ||= %w(test spec tmp features config lib public db).map { |path| Padrino.root(path) }
     end
 
     ##
-    # You can exclude some constant to be unloaded.
-    # Defaults exculded constants are: Padrino, Sinatra, HttpRouter
+    # Specified constants can be excluded from the code unloading process.
+    # Default excluded constants are: Padrino, Sinatra
     #
     def self.exclude_constants
-      @_exclude_constants ||= %w(Padrino::Application Sinatra::Application Sinatra::Base HttpRouter)
+      @_exclude_constants ||= %w(Padrino::Application Sinatra::Application Sinatra::Base)
     end
 
     ##
-    # Reload always specified constants.
-    # Defaults: HttpRouter::RequestNode
+    # Specified constants can be configured to be reloaded on every request.
+    # Default included constants are: [none]
     #
     def self.include_constants
-      @_include_constants ||= %w(HttpRouter::RequestNode)
+      @_include_constants ||= []
     end
 
     ##
-    # What makes it especially suited for use in a any environment is that
-    # any file will only be checked once and there will only be made one system
-    # call stat(2).
+    # This reloader is suited for use in a many environments because each file
+    # will only be checked once and only one system call to stat(2) is made.
     #
-    # Please note that this will not reload files in the background, it does so
-    # only when actively called.
+    # Please note that this will not reload files in the background, and does so
+    # only when explicitly invoked.
     #
     module Stat
       class << self
@@ -73,7 +71,7 @@ module Padrino
         LOADED_CLASSES       = {}
 
         ##
-        # Reload changed files
+        # Reload all files with changes detected.
         #
         def reload!
           rotation do |file, mtime|
@@ -99,7 +97,7 @@ module Padrino
         end
 
         ##
-        # Return true if some thing changed and in the meanwhile fill MTIMES cache
+        # Returns true if any file changes are detected and populates the MTIMES cache
         #
         def changed?
           changed = false
@@ -113,20 +111,20 @@ module Padrino
         alias :run! :changed?
 
         ##
-        # A safe Kernel::load, issuing the hooks depending on the results
+        # A safe Kernel::load which issues the necessary hooks depending on results
         #
         def safe_load(file, mtime=nil)
           reload = mtime && mtime > MTIMES[file]
 
           logger.debug "Reloading #{file}" if reload
 
-          # We remove all classes declared in the specified file
+          # Removes all classes declared in the specified file
           if klasses = LOADED_CLASSES.delete(file)
             klasses.each { |klass| remove_constant(klass) }
           end
 
-          # We track of what constants were loaded and what files
-          # have been added, so that the constants can be removed
+          # Keeps track of which constants were loaded and the files
+          # that have been added so that the constants can be removed
           # and the files can be removed from $LOADED_FEAUTRES
           if FILES_LOADED[file]
             FILES_LOADED[file].each do |fl|
@@ -135,22 +133,44 @@ module Padrino
             end
           end
 
-          # Now we can reload the file ignoring syntax errors
+          # Now reload the file ignoring any syntax errors
           $LOADED_FEATURES.delete(file)
 
-          # Now we can dup objects and loaded features
+          # Duplicate objects and loaded features in the file
           klasses = ObjectSpace.classes.dup
           files_loaded = $LOADED_FEATURES.dup
 
-          # We can start to re-require old deps
+          # Start to re-require old dependencies
+          #
+          # Why we need to reload the dependencies i.e. of a model?
+          #
+          # In some circumstances (i.e. with MongoMapper) reloading a model require:
+          #
+          # 1) Clean objectspace
+          # 2) Reload model dependencies
+          #
+          # We need to clean objectspace because for example we don't need to apply two times validations keys etc...
+          #
+          # We need to reload MongoMapper dependencies for re-initialize them.
+          #
+          # In other cases i.e. in a controller (specially with dependencies that uses autoload) reload stuff like sass
+          # is not really necessary... but how to distinguish when it is (necessary) since it is not?
+          #
           if FILES_LOADED[file]
             FILES_LOADED[file].each do |fl|
               next if fl == file
-              require(fl)
+              # Swich off for a while warnings expecially "already initialized constant" stuff
+              begin
+                verbosity = $-v
+                $-v = nil
+                require(fl)
+              ensure
+                $-v = verbosity
+              end
             end
           end
 
-          # And finally our file to reload
+          # And finally reload the specified file
           begin
             require(file)
           rescue SyntaxError => ex
@@ -159,7 +179,7 @@ module Padrino
             MTIMES[file] = mtime if mtime
           end
 
-          # Store off the details after the file has been loaded
+          # Store the file details after successful loading
           LOADED_CLASSES[file] = ObjectSpace.classes - klasses
           FILES_LOADED[file]   = $LOADED_FEATURES - files_loaded
 
@@ -167,9 +187,9 @@ module Padrino
         end
 
         ##
-        # Removes the specified class.
+        # Removes the specified class and constant.
         #
-        # Additionally, removes the specified class from the subclass list of every superclass that
+        # Additionally this removes the specified class from the subclass list of every superclass that
         # tracks it's subclasses in an array returned by _subclasses_list. Classes that wish to use this
         # functionality are required to alias the reader for their list of subclasses
         # to _subclasses_list. Plugins for ORMs and other libraries should keep this in mind.
@@ -198,7 +218,7 @@ module Padrino
         end
 
         ##
-        # Search Ruby files in your +Padrino.root+ and monitor them for changes.
+        # Searches Ruby files in your +Padrino.root+ and monitors them for any changes.
         #
         def rotation
           paths = Dir[Padrino.root("*")].unshift(Padrino.root).reject { |path| !File.directory?(path) }
@@ -218,9 +238,8 @@ module Padrino
         end
 
         ##
-        # Takes a relative or absolute +file+ name, a couple possible +paths+ that
-        # the +file+ might reside in. Returns the full path and File::Stat for the
-        # path.
+        # Takes a relative or absolute +file+ name and a couple possible +paths+ that
+        # the +file+ might reside in. Returns the full path and File::Stat for that path.
         #
         def figure_path(file, paths)
           found = CACHE[file]

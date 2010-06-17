@@ -40,9 +40,9 @@ The available components and their default options are listed below:
 
 test::       rspec (default), bacon, shoulda, cucumber, testspec, riot
 renderer::   haml  (default), erb
-stylesheet:: sass  (default), less
+stylesheet:: sass  (default), less, compass
 mock::       none  (default), mocha, rr
-script::     none  (default), jquery, prototype, mootools, rightjs, extcore
+script::     none  (default), jquery, prototype, mootools, rightjs, extcore, dojo
 orm::        none  (default), datamapper, mongomapper, mongoid, activerecord, sequel, couchrest
 
 To learn more about the project generator, check out the guide to
