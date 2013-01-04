@@ -31,7 +31,7 @@ class HttpRouter
       @route    = path.route
       @params ||= {}
       @params.update(env['router.params'])
-      @block_params = if path.route.is_a?(HttpRouter::RegexRoute)
+      @block_params = if path.route.is_a?(HttpRouter::Node)
         params_list = env['router.request'].extra_env['router.regex_match'].to_a
         params_list.shift
         @params[:captures] = params_list
