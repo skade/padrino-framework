@@ -133,14 +133,15 @@ describe "Routing" do
   end
 
   should "not generate overlapping head urls" do
+    require 'set'
     app = mock_app do
       get("/main"){ "hello" }
       post("/main"){ "hello" }
     end
     assert_equal 3, app.routes.size, "should generate GET, HEAD and PUT"
-    assert_equal ["GET"],  app.routes[0].conditions[:request_method]
-    assert_equal ["HEAD"], app.routes[1].conditions[:request_method]
-    assert_equal ["POST"], app.routes[2].conditions[:request_method]
+    assert_equal Set.new(["GET"]),  app.routes[0].request_methods
+    assert_equal Set.new(["HEAD"]), app.routes[1].request_methods
+    assert_equal Set.new(["POST"]), app.routes[2].request_methods
   end
 
   should 'generate basic urls' do
@@ -399,7 +400,7 @@ describe "Routing" do
   should "should inject the route into the request" do
     mock_app do
       controller :posts do
-        get(:index) { request.route_obj.named.to_s }
+        get(:index) { request.route_obj.name.to_s }
       end
     end
     get "/posts"
