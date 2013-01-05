@@ -478,9 +478,9 @@ module Padrino
           params = value_to_param(params)
         end
         url = if params_array.empty?
-          compiled_router.url(name, params)
+          compiled_router.path(name, params)
         else
-          compiled_router.url(name, *(params_array << params))
+          compiled_router.path(name, *(params_array << params))
         end
         url[0,0] = conform_uri(uri_root) if defined?(uri_root)
         url[0,0] = conform_uri(ENV['RACK_BASE_URI']) if ENV['RACK_BASE_URI']
