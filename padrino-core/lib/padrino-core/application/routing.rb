@@ -589,7 +589,7 @@ module Padrino
           route.user_agent(options.delete(:agent)) if options.key?(:agent)
           if options.key?(:default_values)
             defaults = options.delete(:default_values)
-            route.default(defaults) if defaults
+            route.add_default_values(defaults) if defaults
           end
           options.delete_if do |option, args|
             if route.send(:significant_variable_names).include?(option)
