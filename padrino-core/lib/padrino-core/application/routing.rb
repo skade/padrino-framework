@@ -576,8 +576,10 @@ module Padrino
 
           # HTTPRouter route construction
           route = router.add(path, route_options)
+
           route.name(name) if name
           route.action = action
+
           priority_name = options.delete(:priority) || :normal
           priority = ROUTE_PRIORITY[priority_name] or raise("Priority #{priority_name} not recognized, try #{ROUTE_PRIORITY.keys.join(', ')}")
           route.cache = options.key?(:cache) ? options.delete(:cache) : @_cache
